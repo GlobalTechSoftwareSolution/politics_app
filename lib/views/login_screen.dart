@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'signup_screen.dart';
 import 'dashboard_screen.dart';
+import '../admin/pending_users_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -43,10 +44,21 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           );
 
-          // Navigate to dashboard
+          // Store user credentials for admin operations
+          PendingUsersScreen.setUserCredentials(
+            _emailController.text,
+            _passwordController.text,
+          );
+
+          // Navigate to dashboard with credentials
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const DashboardScreen()),
+            MaterialPageRoute(
+              builder: (context) => DashboardScreen(
+                userEmail: _emailController.text,
+                userPassword: _passwordController.text,
+              ),
+            ),
           );
         } else {
           // Show error message

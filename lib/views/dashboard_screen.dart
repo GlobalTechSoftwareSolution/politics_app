@@ -7,9 +7,13 @@ import '../services/news_service.dart';
 import '../admin/admin_dashboard.dart';
 import '../admin/pending_users_screen.dart';
 import 'login_screen.dart';
+import '../admin/admin_service.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  final String? userEmail;
+  final String? userPassword;
+
+  const DashboardScreen({super.key, this.userEmail, this.userPassword});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -20,11 +24,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<NewsModel> _newsList = [];
   bool _isLoading = true;
   bool _isAdmin = false; // Check if user is admin
+  String _userEmail = '';
+  String _userPassword = '';
 
   @override
   void initState() {
     super.initState();
-    _checkUserRole();
+    // Set credentials from constructor if provided
+    if (widget.userEmail != null && widget.userPassword != null) {
+      _userEmail = widget.userEmail!;
+      _userPassword = widget.userPassword!;
+      // Check admin status after a short delay to allow UI to build
+      Future.delayed(const Duration(milliseconds: 100), _checkUserRole);
+    }
+    _fetchNews();
   }
 
   // Fetch news from API
@@ -132,10 +145,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
             icon: Icon(Icons.people),
             label: 'Politicians',
           ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.group),
-            label: 'Approve Users',
-          ),
+          if (_isAdmin)
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.group),
+              label: 'Approve Users',
+            ),
           if (_isAdmin)
             const BottomNavigationBarItem(
               icon: Icon(Icons.admin_panel_settings),
@@ -238,9 +252,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  // Method to set user credentials (called from login)
+  void setUserCredentials(String email, String password) {
+    setState(() {
+      _userEmail = email;
+      _userPassword = password;
+    });
+  }
+
   void _checkUserRole() async {
-    // Simple check - just show dashboard for now
-    // In a real app, you would check if user is logged in
+    // Only check if we have credentials
+    print(
+      'Checking user role with email: $_userEmail, password: ${_userPassword.length > 0 ? '***' : 'EMPTY'}',
+    );
+
+    if (_userEmail.isEmpty || _userPassword.isEmpty) {
+      print('Credentials are empty, setting admin to false');
+      setState(() {
+        _isAdmin = false;
+      });
+      return;
+    }
+
+    try {
+      final adminService = AdminService();
+      // Try to get pending users to check if user has admin access
+      print('Calling admin service with email: $_userEmail');
+      await adminService.getPendingUsers(_userEmail, _userPassword);
+      print('Admin check successful, user is admin');
+      setState(() {
+        _isAdmin = true;
+      });
+    } catch (e) {
+      print('Admin check failed: $e');
+      // User is not admin, keep _isAdmin as false
+      setState(() {
+        _isAdmin = false;
+      });
+    }
   }
 
   Widget _buildProfileContent() {

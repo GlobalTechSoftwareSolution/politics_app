@@ -6,6 +6,15 @@ class PendingUsersScreen extends StatefulWidget {
 
   @override
   State<PendingUsersScreen> createState() => _PendingUsersScreenState();
+
+  // Static method to set user credentials from login
+  static void setUserCredentials(String email, String password) {
+    _userEmail = email;
+    _userPassword = password;
+  }
+
+  static String _userEmail = '';
+  static String _userPassword = '';
 }
 
 class _PendingUsersScreenState extends State<PendingUsersScreen> {
@@ -25,7 +34,10 @@ class _PendingUsersScreenState extends State<PendingUsersScreen> {
     });
 
     try {
-      final users = await _adminService.getPendingUsers();
+      final users = await _adminService.getPendingUsers(
+        PendingUsersScreen._userEmail,
+        PendingUsersScreen._userPassword,
+      );
       setState(() {
         _pendingUsers = users;
       });
@@ -49,7 +61,10 @@ class _PendingUsersScreenState extends State<PendingUsersScreen> {
     });
 
     try {
-      final result = await _adminService.approveUser(userId);
+      final result = await _adminService.approveUser(
+        userId,
+        PendingUsersScreen._userPassword,
+      );
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(result['message'] ?? 'User approved successfully'),
