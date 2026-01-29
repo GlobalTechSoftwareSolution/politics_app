@@ -25,6 +25,13 @@ class _PendingUsersScreenState extends State<PendingUsersScreen> {
   @override
   void initState() {
     super.initState();
+    _isLoading = true;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Load pending users after widget is fully initialized
     _loadPendingUsers();
   }
 
@@ -104,7 +111,16 @@ class _PendingUsersScreenState extends State<PendingUsersScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Pending Users'),
-        backgroundColor: Colors.blue[900],
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadPendingUsers,
+            tooltip: 'Refresh',
+          ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

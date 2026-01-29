@@ -295,7 +295,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 1:
         return const ContentManagementScreen();
       case 2:
-        return const PendingUsersScreen();
+        // Set credentials for pending users screen
+        PendingUsersScreen.setUserCredentials(_userEmail, _userPassword);
+        return PendingUsersScreen();
       case 3:
         return _buildProfileContent();
       default:
@@ -322,24 +324,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 20),
 
               // Active Info Section
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Active Information',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      _fetchActiveInfo();
-                    },
-                    child: const Text('Refresh'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-
-              // Active info loading or content
               if (_isLoading)
                 const Center(
                   child: Padding(
@@ -348,7 +332,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 )
               else
-                // Active info display - use stored data instead of FutureBuilder
                 _buildActiveInfoSection(),
             ],
           ),
@@ -479,14 +462,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'John Doe',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  Text(
+                    _userEmail.isNotEmpty ? _userEmail : 'User',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Active Citizen',
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  Text(
+                    _isAdmin ? 'Superuser' : 'User',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: _isAdmin ? Colors.green : Colors.blue[900],
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -500,29 +490,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 title: const Text('Account Settings'),
                 trailing: const Icon(Icons.arrow_forward_ios),
                 onTap: () {
-                  // Handle settings
-                },
-              ),
-            ),
-            const SizedBox(height: 10),
-            Card(
-              child: ListTile(
-                leading: Icon(Icons.history, color: Colors.blue[900]),
-                title: const Text('My Activity'),
-                trailing: const Icon(Icons.arrow_forward_ios),
-                onTap: () {
-                  // Handle activity
-                },
-              ),
-            ),
-            const SizedBox(height: 10),
-            Card(
-              child: ListTile(
-                leading: Icon(Icons.help, color: Colors.blue[900]),
-                title: const Text('Help & Support'),
-                trailing: const Icon(Icons.arrow_forward_ios),
-                onTap: () {
-                  // Handle help
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AccountSettingsScreen(
+                        userEmail: _userEmail,
+                        userPassword: _userPassword,
+                        isAdmin: _isAdmin,
+                      ),
+                    ),
+                  );
                 },
               ),
             ),
@@ -642,7 +619,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildActiveInfoCard(Map<String, dynamic> item, int index) {
     final heading = item['heading'] ?? 'No heading';
     final description = item['description'] ?? 'No description';
-    final submittedBy = item['submitted_by']['fullname'] ?? 'Unknown';
+    final submittedBy = item['submitted_by']['fullname'] ?? 'user';
     final imageUrl = item['image'];
     final submittedAt = item['submitted_by']['created_at'] ?? '';
 
@@ -828,7 +805,7 @@ class ActiveInfoDetailScreen extends StatelessWidget {
     final heading = item['heading'] ?? 'No heading';
     final description = item['description'] ?? 'No description';
     final imageUrl = item['image'];
-    final submittedBy = item['submitted_by']['fullname'] ?? 'Unknown';
+    final submittedBy = item['submitted_by']['fullname'] ?? 'user';
     final submittedByEmail = item['submitted_by']['email'] ?? '';
     final submittedAt = item['submitted_by']['created_at'] ?? '';
     final approvedAt = item['approved_at'] ?? '';
@@ -836,8 +813,9 @@ class ActiveInfoDetailScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Active Information Details'),
-        backgroundColor: Colors.blue[900],
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -1010,5 +988,540 @@ class ActiveInfoDetailScreen extends StatelessWidget {
     } catch (e) {
       return dateString;
     }
+  }
+}
+
+// Account Settings Screen
+class AccountSettingsScreen extends StatefulWidget {
+  final String? userEmail;
+  final String? userPassword;
+  final bool isAdmin;
+
+  const AccountSettingsScreen({
+    super.key,
+    this.userEmail,
+    this.userPassword,
+    required this.isAdmin,
+  });
+
+  @override
+  State<AccountSettingsScreen> createState() => _AccountSettingsScreenState();
+}
+
+class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
+  Map<String, dynamic>? _userProfile;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  String _formatDate(String? dateString) {
+    if (dateString == null || dateString.isEmpty) return 'Unknown date';
+    try {
+      final date = DateTime.parse(dateString);
+      return '${date.day}/${date.month}/${date.year} at ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return dateString;
+    }
+  }
+
+  Future<void> _loadUserProfile() async {
+    if (widget.userEmail == null || widget.userPassword == null) {
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
+
+    try {
+      final profile = await _getUserProfile(
+        widget.userEmail!,
+        widget.userPassword!,
+      );
+      setState(() {
+        _userProfile = profile;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to load profile: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> _getUserProfile(
+    String email,
+    String password,
+  ) async {
+    final url = Uri.parse('http://10.0.2.2:8000/api/profile/');
+    final authString = '$email:$password';
+    final authBase64 = base64.base64Encode(utf8.utf8.encode(authString));
+
+    final headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Basic $authBase64',
+    };
+
+    final response = await http.get(url, headers: headers);
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to load user profile: ${response.statusCode}');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Account Settings'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _buildAccountSettingsContent(),
+    );
+  }
+
+  Widget _buildAccountSettingsContent() {
+    if (_userProfile == null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.person, size: 80, color: Colors.grey),
+            const SizedBox(height: 16),
+            Text(
+              'User Profile Not Available',
+              style: TextStyle(fontSize: 18, color: Colors.grey),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Please log in to view your profile',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final fullname = _userProfile!['fullname'] ?? 'User';
+    final email = _userProfile!['email'] ?? widget.userEmail ?? 'No email';
+    final role = _userProfile!['role'] ?? 'user';
+    final isApproved = _userProfile!['is_approved'] ?? false;
+    final isSuperuser = _userProfile!['is_superuser'] ?? false;
+    final isStaff = _userProfile!['is_staff'] ?? false;
+    final createdAt = _userProfile!['created_at'];
+    final approvalDate = _userProfile!['approval_date'];
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Profile Header
+          Card(
+            elevation: 3,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 35,
+                    backgroundColor: Colors.blue[100],
+                    child: Icon(
+                      Icons.person,
+                      size: 40,
+                      color: Colors.blue[900],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          fullname,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          email,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Chip(
+                              label: Text(
+                                role.toUpperCase(),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              backgroundColor: Colors.blue[100],
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            if (isSuperuser)
+                              Chip(
+                                label: const Text(
+                                  'SUPERUSER',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                backgroundColor: Colors.green[100],
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                              ),
+                            if (isStaff)
+                              Chip(
+                                label: const Text(
+                                  'STAFF',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                backgroundColor: Colors.orange[100],
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Account Information
+          const Text(
+            'Account Information',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.blue,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Account Details Cards
+          _buildInfoCard(
+            Icons.email,
+            'Email Address',
+            email,
+            'This is your primary email address',
+          ),
+          _buildInfoCard(
+            Icons.person,
+            'Full Name',
+            fullname,
+            'Your display name in the application',
+          ),
+          _buildInfoCard(
+            Icons.badge,
+            'Account Type',
+            role.toUpperCase(),
+            'Your account role and permissions',
+          ),
+          _buildInfoCard(
+            Icons.verified_user,
+            'Account Status',
+            isApproved ? 'Approved' : 'Pending Approval',
+            isApproved
+                ? 'Your account has been approved'
+                : 'Your account is pending admin approval',
+            color: isApproved ? Colors.green : Colors.orange,
+          ),
+
+          const SizedBox(height: 16),
+
+          // System Information
+          const Text(
+            'System Information',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.blue,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          _buildInfoCard(
+            Icons.calendar_today,
+            'Member Since',
+            _formatDate(createdAt),
+            'Date when your account was created',
+          ),
+          if (approvalDate != null)
+            _buildInfoCard(
+              Icons.check_circle,
+              'Approved On',
+              _formatDate(approvalDate),
+              'Date when your account was approved',
+            ),
+          _buildInfoCard(
+            Icons.security,
+            'Security Level',
+            isSuperuser ? 'High (Superuser)' : 'Standard',
+            isSuperuser
+                ? 'Full system access and privileges'
+                : 'Standard user privileges',
+            color: isSuperuser ? Colors.red : Colors.blue,
+          ),
+
+          const SizedBox(height: 24),
+
+          // Actions
+          const Text(
+            'Account Actions',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.blue,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: Icon(Icons.lock, color: Colors.blue[900]),
+                    title: const Text('Change Password'),
+                    subtitle: const Text('Update your account password'),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () {
+                      // Handle password change
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Password change feature coming soon'),
+                          backgroundColor: Colors.blue,
+                        ),
+                      );
+                    },
+                  ),
+                  const Divider(),
+                  ListTile(
+                    leading: Icon(Icons.notifications, color: Colors.blue[900]),
+                    title: const Text('Notification Settings'),
+                    subtitle: const Text(
+                      'Manage your notification preferences',
+                    ),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () {
+                      // Handle notification settings
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Notification settings coming soon'),
+                          backgroundColor: Colors.blue,
+                        ),
+                      );
+                    },
+                  ),
+                  const Divider(),
+                  ListTile(
+                    leading: Icon(Icons.help, color: Colors.blue[900]),
+                    title: const Text('Help & Support'),
+                    subtitle: const Text('Get help with using the app'),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () {
+                      // Handle help & support
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Help & Support coming soon'),
+                          backgroundColor: Colors.blue,
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Admin Actions (if user is admin)
+          if (widget.isAdmin)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Admin Actions',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Card(
+                  color: Colors.red[50],
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        ListTile(
+                          leading: Icon(
+                            Icons.group_add,
+                            color: Colors.red[900],
+                          ),
+                          title: const Text('Manage Users'),
+                          subtitle: const Text(
+                            'Approve pending users and manage accounts',
+                          ),
+                          trailing: const Icon(
+                            Icons.arrow_forward_ios,
+                            size: 16,
+                          ),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => PendingUsersScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        const Divider(),
+                        ListTile(
+                          leading: Icon(
+                            Icons.content_paste,
+                            color: Colors.red[900],
+                          ),
+                          title: const Text('Content Management'),
+                          subtitle: const Text(
+                            'Manage active information and content',
+                          ),
+                          trailing: const Icon(
+                            Icons.arrow_forward_ios,
+                            size: 16,
+                          ),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const ContentManagementScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
+
+          // Logout Button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () async {
+                // Clear saved credentials
+                await authService.clearCredentials();
+
+                // Navigate to login screen
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red[900],
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: const Text('Logout', style: TextStyle(fontSize: 16)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(
+    IconData icon,
+    String title,
+    String value,
+    String description, {
+    Color? color,
+  }) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: color ?? Colors.blue[900], size: 20),
+                const SizedBox(width: 12),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: color ?? Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              description,
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

@@ -124,15 +124,21 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            CircularProgressIndicator(),
-            SizedBox(height: 20),
-            Text('Loading...', style: TextStyle(fontSize: 18)),
-          ],
+    return WillPopScope(
+      onWillPop: () async {
+        // Prevent back button from closing the app during auth check
+        return false;
+      },
+      child: Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              CircularProgressIndicator(),
+              SizedBox(height: 20),
+              Text('Loading...', style: TextStyle(fontSize: 18)),
+            ],
+          ),
         ),
       ),
     );

@@ -192,7 +192,9 @@ class _ContentManagementScreenState extends State<ContentManagementScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Content Management'),
-        backgroundColor: Colors.blue[900],
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

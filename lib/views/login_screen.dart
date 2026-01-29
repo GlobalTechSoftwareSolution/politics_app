@@ -43,7 +43,9 @@ class _LoginScreenState extends State<LoginScreen> {
           );
 
           // Show welcome message with full name
-          final fullName = response['user']['fullname'] ?? 'User';
+          final fullName =
+              response['user']?['fullname'] ??
+              _emailController.text.split('@').first;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Welcome back, $fullName!'),
@@ -97,10 +99,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }) async {
     // Simple mock login for now
     await Future.delayed(const Duration(seconds: 1));
-    return {
-      'message': 'Login successful',
-      'user': {'fullname': 'John Doe'},
-    };
+    return {'message': 'Login successful'};
   }
 
   @override
