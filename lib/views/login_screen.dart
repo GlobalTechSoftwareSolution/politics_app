@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'signup_screen.dart';
 import 'dashboard_screen.dart';
 import '../admin/pending_users_screen.dart';
+import '../admin/admin_dashboard.dart';
+import '../user/user_dashboard.dart';
 import '../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -59,7 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
             _passwordController.text,
           );
 
-          // Navigate to dashboard with credentials
+          // Navigate to main dashboard
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -97,9 +99,18 @@ class _LoginScreenState extends State<LoginScreen> {
     required String email,
     required String password,
   }) async {
-    // Simple mock login for now
-    await Future.delayed(const Duration(seconds: 1));
-    return {'message': 'Login successful'};
+    // Make actual API call to login
+    final response = await http.post(
+      Uri.parse('http://10.0.2.2:8000/api/login/'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email, 'password': password}),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Login failed: ${response.statusCode}');
+    }
   }
 
   @override

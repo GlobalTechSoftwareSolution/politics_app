@@ -1,36 +1,31 @@
 import 'package:flutter/material.dart';
-import 'mla_mp_list_screen.dart';
-import 'map_screen.dart';
 import '../models/news_model.dart';
 import '../widgets/news_card.dart';
 import '../services/news_service.dart';
-import '../admin/admin_dashboard.dart';
+import '../services/auth_service.dart';
+import '../views/content_management_screen.dart';
 import '../admin/pending_users_screen.dart';
-import 'login_screen.dart';
-import '../admin/admin_service.dart';
-import 'content_management_screen.dart';
-import 'add_content_screen.dart';
+import '../views/login_screen.dart';
+import '../views/user_add_content_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert' as utf8;
 import 'dart:convert' as base64;
 import 'dart:convert';
-import '../services/auth_service.dart';
 
-class DashboardScreen extends StatefulWidget {
+class UserDashboard extends StatefulWidget {
   final String? userEmail;
   final String? userPassword;
 
-  const DashboardScreen({super.key, this.userEmail, this.userPassword});
+  const UserDashboard({super.key, this.userEmail, this.userPassword});
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  State<UserDashboard> createState() => _UserDashboardState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _UserDashboardState extends State<UserDashboard> {
   int _currentIndex = 0;
   List<NewsModel> _newsList = [];
   bool _isLoading = true;
-  bool _isAdmin = false; // Check if user is admin
   String _userEmail = '';
   String _userPassword = '';
 
@@ -41,8 +36,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (widget.userEmail != null && widget.userPassword != null) {
       _userEmail = widget.userEmail!;
       _userPassword = widget.userPassword!;
-      // Check admin status after a short delay to allow UI to build
-      Future.delayed(const Duration(milliseconds: 100), _checkUserRole);
     }
     // Initialize news without setState to avoid initial jank
     _initializeNews();
@@ -241,19 +234,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       },
       selectedItemColor: Colors.blue[900],
       unselectedItemColor: Colors.grey,
-      items: [
-        const BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-        if (_isAdmin)
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.content_paste),
-            label: 'Content',
-          ),
-        if (_isAdmin)
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.group_add),
-            label: 'Approve Users',
-          ),
-        const BottomNavigationBarItem(
+      items: const [
+        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+        BottomNavigationBarItem(
           icon: Icon(Icons.account_circle),
           label: 'Profile',
         ),
@@ -262,7 +245,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Politics Dashboard'),
+        title: const Text('User Dashboard'),
         backgroundColor: Colors.blue[900],
         foregroundColor: Colors.white,
         actions: [
@@ -286,7 +269,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const AddContentScreen()),
+            MaterialPageRoute(
+              builder: (context) => const UserAddContentScreen(),
+            ),
           );
         },
         backgroundColor: Colors.blue[900],
@@ -301,22 +286,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 0:
         return _buildHomeContent();
       case 1:
-        // Only show content management if user is admin
-        if (_isAdmin) {
-          return const ContentManagementScreen();
-        } else {
-          return _buildHomeContent(); // Redirect to home if not admin
-        }
-      case 2:
-        // Only show pending users if user is admin
-        if (_isAdmin) {
-          // Set credentials for pending users screen
-          PendingUsersScreen.setUserCredentials(_userEmail, _userPassword);
-          return PendingUsersScreen();
-        } else {
-          return _buildHomeContent(); // Redirect to home if not admin
-        }
-      case 3:
         return _buildProfileContent();
       default:
         return _buildHomeContent();
@@ -326,7 +295,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildHomeContent() {
     return RefreshIndicator(
       onRefresh: () async {
-        _fetchActiveInfo();
+        _fetchNews();
       },
       child: SingleChildScrollView(
         child: Padding(
@@ -366,99 +335,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
-  void _checkUserRole() async {
-    // Only check if we have credentials
-    print('=== CHECKING USER ROLE ===');
-    print('Email: $_userEmail');
-    print('Password length: ${_userPassword.length}');
-
-    if (_userEmail.isEmpty || _userPassword.isEmpty) {
-      print('Credentials are empty, setting admin to false');
-      setState(() {
-        _isAdmin = false;
-      });
-      return;
-    }
-
-    try {
-      final adminService = AdminService();
-      // Try to get pending users to check if user has admin access
-      print('=== TRYING PENDING USERS API ===');
-      final pendingUsers = await adminService.getPendingUsers(
-        _userEmail,
-        _userPassword,
-      );
-      print(
-        'Admin check successful, user is admin. Found ${pendingUsers.length} pending users',
-      );
-      setState(() {
-        _isAdmin = true;
-      });
-      print('=== ADMIN STATUS SET TO TRUE (PENDING USERS) ===');
-    } catch (e) {
-      print('Pending users API failed: $e');
-      print('=== TRYING PROFILE API FOR SUPERUSER CHECK ===');
-      // Check if this is a superuser by trying to get user profile
-      try {
-        final profile = await _getUserProfile(_userEmail, _userPassword);
-        print('Profile API successful');
-        print('Profile data: $profile');
-        print('Is superuser: ${profile['is_superuser']}');
-        print('Is staff: ${profile['is_staff']}');
-
-        final isSuperuser = profile['is_superuser'] == true;
-        final isStaff = profile['is_staff'] == true;
-
-        setState(() {
-          _isAdmin = isSuperuser || isStaff;
-        });
-
-        print('=== ADMIN STATUS SET TO: ${isSuperuser || isStaff} ===');
-        print('Superuser: $isSuperuser, Staff: $isStaff');
-      } catch (profileError) {
-        print('Profile API also failed: $profileError');
-        // User is not admin, keep _isAdmin as false
-        setState(() {
-          _isAdmin = false;
-        });
-        print('=== ADMIN STATUS SET TO FALSE (BOTH APIS FAILED) ===');
-      }
-    }
-  }
-
-  // Helper method to get user profile
-  Future<Map<String, dynamic>> _getUserProfile(
-    String email,
-    String password,
-  ) async {
-    final url = Uri.parse('http://10.0.2.2:8000/api/profile/');
-    final authString = '$email:$password';
-    final authBase64 = base64.base64Encode(utf8.utf8.encode(authString));
-
-    final headers = {
-      'Content-Type': 'application/json',
-      'Authorization': 'Basic $authBase64',
-    };
-
-    print('=== PROFILE API CALL ===');
-    print('URL: $url');
-    print('Email: $email');
-    print('Password length: ${password.length}');
-    print('Auth base64: $authBase64');
-
-    final response = await http.get(url, headers: headers);
-
-    print('=== PROFILE RESPONSE ===');
-    print('Status: ${response.statusCode}');
-    print('Body: ${response.body}');
-
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to load user profile: ${response.statusCode}');
-    }
-  }
-
   Widget _buildProfileContent() {
     return SingleChildScrollView(
       child: Padding(
@@ -488,11 +364,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    _isAdmin ? 'Superuser' : 'User',
+                  const Text(
+                    'User',
                     style: TextStyle(
                       fontSize: 16,
-                      color: _isAdmin ? Colors.green : Colors.blue[900],
+                      color: Colors.blue,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -511,10 +387,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => AccountSettingsScreen(
+                      builder: (context) => UserAccountSettingsScreen(
                         userEmail: _userEmail,
                         userPassword: _userPassword,
-                        isAdmin: _isAdmin,
                       ),
                     ),
                   );
@@ -569,25 +444,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
-          print('=== ACTIVE-INFO ERROR ===');
-          print('Error: ${snapshot.error}');
           return Center(child: Text('Error: ${snapshot.error}'));
         } else if (snapshot.hasData) {
           final response = snapshot.data!;
-          print('=== ACTIVE-INFO RESPONSE ===');
-          print('Status Code: ${response.statusCode}');
-          print('Headers: ${response.headers}');
-          print('Body: ${response.body}');
-          print('Content Length: ${response.contentLength} bytes');
-          print('Reason Phrase: ${response.reasonPhrase}');
+          print('Active-info API response status: ${response.statusCode}');
+          print('Active-info API response body: ${response.body}');
 
           if (response.statusCode == 200) {
             final data = jsonDecode(response.body);
-            print('=== ACTIVE-INFO SUCCESS ===');
-            print('Response Data: $data');
-            print('Data Type: ${data.runtimeType}');
-            print('Data Length: ${data is List ? data.length : 'Not a list'}');
-
             // Check if data is a list or single object
             if (data is List) {
               return _buildActiveInfoListDisplay(data);
@@ -595,10 +459,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               return _buildActiveInfoDisplay(data);
             }
           } else {
-            print('=== ACTIVE-INFO FAILED ===');
-            print('Status Code: ${response.statusCode}');
-            print('Reason Phrase: ${response.reasonPhrase}');
-            print('Response Body: ${response.body}');
             return Center(
               child: Text(
                 'API Error: ${response.statusCode} - ${response.reasonPhrase}',
@@ -606,7 +466,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             );
           }
         } else {
-          print('=== ACTIVE-INFO NO DATA ===');
           return const Center(child: Text('No data available'));
         }
       },
@@ -1025,24 +884,23 @@ class ActiveInfoDetailScreen extends StatelessWidget {
   }
 }
 
-// Account Settings Screen
-class AccountSettingsScreen extends StatefulWidget {
+// User Account Settings Screen
+class UserAccountSettingsScreen extends StatefulWidget {
   final String? userEmail;
   final String? userPassword;
-  final bool isAdmin;
 
-  const AccountSettingsScreen({
+  const UserAccountSettingsScreen({
     super.key,
     this.userEmail,
     this.userPassword,
-    required this.isAdmin,
   });
 
   @override
-  State<AccountSettingsScreen> createState() => _AccountSettingsScreenState();
+  State<UserAccountSettingsScreen> createState() =>
+      _UserAccountSettingsScreenState();
 }
 
-class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
+class _UserAccountSettingsScreenState extends State<UserAccountSettingsScreen> {
   Map<String, dynamic>? _userProfile;
   bool _isLoading = true;
 
@@ -1155,8 +1013,6 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     final email = _userProfile!['email'] ?? widget.userEmail ?? 'No email';
     final role = _userProfile!['role'] ?? 'user';
     final isApproved = _userProfile!['is_approved'] ?? false;
-    final isSuperuser = _userProfile!['is_superuser'] ?? false;
-    final isStaff = _userProfile!['is_staff'] ?? false;
     final createdAt = _userProfile!['created_at'];
     final approvalDate = _userProfile!['approval_date'];
 
@@ -1218,37 +1074,6 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                                 vertical: 4,
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            if (isSuperuser)
-                              Chip(
-                                label: const Text(
-                                  'SUPERUSER',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                backgroundColor: Colors.green[100],
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                              ),
-                            if (isStaff)
-                              Chip(
-                                label: const Text(
-                                  'STAFF',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                backgroundColor: Colors.orange[100],
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                              ),
                           ],
                         ),
                       ],
@@ -1327,15 +1152,6 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
               _formatDate(approvalDate),
               'Date when your account was approved',
             ),
-          _buildInfoCard(
-            Icons.security,
-            'Security Level',
-            isSuperuser ? 'High (Superuser)' : 'Standard',
-            isSuperuser
-                ? 'Full system access and privileges'
-                : 'Standard user privileges',
-            color: isSuperuser ? Colors.red : Colors.blue,
-          ),
 
           const SizedBox(height: 24),
 
@@ -1411,80 +1227,6 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
 
           const SizedBox(height: 24),
 
-          // Admin Actions (if user is admin)
-          if (widget.isAdmin)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Admin Actions',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Card(
-                  color: Colors.red[50],
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      children: [
-                        ListTile(
-                          leading: Icon(
-                            Icons.group_add,
-                            color: Colors.red[900],
-                          ),
-                          title: const Text('Manage Users'),
-                          subtitle: const Text(
-                            'Approve pending users and manage accounts',
-                          ),
-                          trailing: const Icon(
-                            Icons.arrow_forward_ios,
-                            size: 16,
-                          ),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => PendingUsersScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                        const Divider(),
-                        ListTile(
-                          leading: Icon(
-                            Icons.content_paste,
-                            color: Colors.red[900],
-                          ),
-                          title: const Text('Content Management'),
-                          subtitle: const Text(
-                            'Manage active information and content',
-                          ),
-                          trailing: const Icon(
-                            Icons.arrow_forward_ios,
-                            size: 16,
-                          ),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const ContentManagementScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-              ],
-            ),
-
           // Logout Button
           SizedBox(
             width: double.infinity,
@@ -1496,7 +1238,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                 // Navigate to login screen
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  MaterialPageRoute(builder: (context) => LoginScreen()),
                 );
               },
               style: ElevatedButton.styleFrom(

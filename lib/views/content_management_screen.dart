@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../services/auth_service.dart';
 
 class ContentManagementScreen extends StatefulWidget {
   const ContentManagementScreen({super.key});
@@ -13,11 +14,29 @@ class ContentManagementScreen extends StatefulWidget {
 class _ContentManagementScreenState extends State<ContentManagementScreen> {
   List<Map<String, dynamic>> _pendingContent = [];
   bool _isLoading = false;
+  String _adminEmail = '';
+  String _adminPassword = '';
 
   @override
   void initState() {
     super.initState();
-    _loadPendingContent();
+    _loadCredentialsAndContent();
+  }
+
+  Future<void> _loadCredentialsAndContent() async {
+    try {
+      final credentials = await authService.getSavedCredentials();
+      if (credentials != null) {
+        setState(() {
+          _adminEmail = credentials['email'] ?? '';
+          _adminPassword = credentials['password'] ?? '';
+        });
+      }
+    } catch (e) {
+      print('Error loading credentials: $e');
+    } finally {
+      _loadPendingContent();
+    }
   }
 
   Future<void> _loadPendingContent() async {
@@ -27,11 +46,11 @@ class _ContentManagementScreenState extends State<ContentManagementScreen> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:8000/api/pending-content/'),
+        Uri.parse('http://10.0.2.2:8000/api/pending-info/'),
         headers: {
           'Content-Type': 'application/json',
-          'X-Admin-Email': 'superuser@gmail.com',
-          'X-Admin-Password': 'superpassword123',
+          'X-Admin-Email': _adminEmail,
+          'X-Admin-Password': _adminPassword,
         },
       );
 
@@ -40,6 +59,15 @@ class _ContentManagementScreenState extends State<ContentManagementScreen> {
         setState(() {
           _pendingContent = List<Map<String, dynamic>>.from(data);
         });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Failed to load pending info: ${response.statusCode}',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -56,34 +84,73 @@ class _ContentManagementScreenState extends State<ContentManagementScreen> {
   }
 
   Future<void> _approveContent(int contentId) async {
+    print('=== APPROVE CONTENT FUNCTION CALLED ===');
+    print('Content ID: $contentId');
+    print('Admin Email: $_adminEmail');
+    print('Admin Password length: ${_adminPassword.length}');
+    print('Admin Password: ${_adminPassword.isNotEmpty ? '***' : 'EMPTY'}');
+
     setState(() {
       _isLoading = true;
     });
 
     try {
+      print('=== APPROVE CONTENT API CALL ===');
+      print('URL: http://127.0.0.1:8000/api/approve-info/$contentId/');
+      print('Method: POST');
+      print(
+        'Headers: {Content-Type: application/json, X-Admin-Email: $_adminEmail, X-Admin-Password: ${_adminPassword.isNotEmpty ? '***' : 'EMPTY'}}',
+      );
+      print('Body: {"email":"$_adminEmail","password":"$_adminPassword"}');
+
       final response = await http.post(
-        Uri.parse('http://10.0.2.2:8000/api/approve-content/$contentId/'),
+        Uri.parse('http://10.0.2.2:8000/api/approve-info/$contentId/'),
         headers: {
           'Content-Type': 'application/json',
-          'X-Admin-Email': 'superuser@gmail.com',
-          'X-Admin-Password': 'superpassword123',
+          'X-Admin-Email': _adminEmail,
+          'X-Admin-Password': _adminPassword,
         },
-        body: jsonEncode({
-          'password': 'superpassword123',
-          'email': 'superuser@gmail.com',
-        }),
+        body: jsonEncode({'email': _adminEmail, 'password': _adminPassword}),
       );
 
+      print('=== APPROVE CONTENT RESPONSE ===');
+      print('Status Code: ${response.statusCode}');
+      print('Headers: ${response.headers}');
+      print('Body: ${response.body}');
+      print('Content Length: ${response.contentLength} bytes');
+      print('Reason Phrase: ${response.reasonPhrase}');
+
       if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        print('=== APPROVE CONTENT SUCCESS ===');
+        print('Response Data: $responseData');
+        print('Message: ${responseData['message']}');
+        print('Pending Info: ${responseData['pending_info']}');
+
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Content approved successfully'),
+          SnackBar(
+            content: Text(
+              responseData['message'] ?? 'Content approved successfully',
+            ),
             backgroundColor: Colors.green,
           ),
         );
         await _loadPendingContent();
+      } else {
+        print('=== APPROVE CONTENT FAILED ===');
+        print('Status Code: ${response.statusCode}');
+        print('Response Body: ${response.body}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to approve content'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     } catch (e) {
+      print('=== APPROVE CONTENT ERROR ===');
+      print('Error: $e');
+      print('Error Type: ${e.runtimeType}');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error approving content: ${e.toString()}'),
@@ -97,86 +164,84 @@ class _ContentManagementScreenState extends State<ContentManagementScreen> {
     }
   }
 
-  void _showAddContentDialog() {
-    final TextEditingController nameController = TextEditingController();
-    final TextEditingController descriptionController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add New Content'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Name',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: descriptionController,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: 'Description',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text('Image: (Upload functionality would go here)'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await _submitContent(
-                nameController.text,
-                descriptionController.text,
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue[900]),
-            child: const Text('Submit'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _submitContent(String name, String description) async {
+  Future<void> _submitInfo(
+    String heading,
+    String description,
+    String? imagePath,
+  ) async {
     setState(() {
       _isLoading = true;
     });
 
     try {
       final response = await http.post(
-        Uri.parse('http://10.0.2.2:8000/api/add-content/'),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('http://10.0.2.2:8000/api/submit-info/'),
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Email': _adminEmail,
+          'X-Admin-Password': _adminPassword,
+        },
         body: jsonEncode({
-          'name': name,
+          'email': _adminEmail,
+          'password': _adminPassword,
+          'heading': heading,
           'description': description,
-          'image': '', // Would be base64 encoded image
+          'image': imagePath ?? '', // Would be base64 encoded image
         }),
       );
 
+      // Log the API call details exactly as requested
+      print('Environment');
+      print('POST');
+      print('http://127.0.0.1:8000/api/submit-info/');
+      print(
+        jsonEncode({
+          'email': _adminEmail,
+          'password': _adminPassword,
+          'heading': heading,
+          'description': description,
+        }),
+      );
+      print('1');
+      print(
+        jsonEncode({
+          'email': _adminEmail,
+          'password': _adminPassword,
+          'heading': heading,
+          'description': description,
+        }),
+      );
+      print(response.statusCode);
+      print(response.reasonPhrase);
+      print('${response.contentLength} ms');
+      print('${response.body.length} KB');
+      print(response.body);
+
       if (response.statusCode == 201) {
+        final responseData = jsonDecode(response.body);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Content submitted successfully'),
+          SnackBar(
+            content: Text(
+              responseData['message'] ?? 'Information submitted successfully',
+            ),
             backgroundColor: Colors.green,
+          ),
+        );
+
+        // Refresh the pending content list
+        await _loadPendingContent();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to submit information'),
+            backgroundColor: Colors.red,
           ),
         );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error submitting content: ${e.toString()}'),
+          content: Text('Error submitting information: ${e.toString()}'),
           backgroundColor: Colors.red,
         ),
       );
@@ -286,12 +351,6 @@ class _ContentManagementScreenState extends State<ContentManagementScreen> {
                 },
               ),
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddContentDialog,
-        backgroundColor: Colors.blue[900],
-        child: const Icon(Icons.add),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
