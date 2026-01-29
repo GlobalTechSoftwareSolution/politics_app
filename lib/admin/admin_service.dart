@@ -13,18 +13,27 @@ class AdminService {
     );
 
     final url = Uri.parse('http://10.0.2.2:8000/api/pending-users/');
+
+    // Use custom headers as expected by the backend
     final headers = {
       'Content-Type': 'application/json',
-      'X-Admin-Password': password, // Use the actual password from login
+      'X-Admin-Email': email,
+      'X-Admin-Password': password,
     };
 
-    print('Making API call to: $url');
-    print('With headers: $headers');
+    print('=== PENDING-USERS API CALL ===');
+    print('URL: $url');
+    print('Email: $email');
+    print('Password length: ${password.length}');
+    print('Password: ${password.isNotEmpty ? '***' : 'EMPTY'}');
+    print('Headers: $headers');
 
     final response = await http.get(url, headers: headers);
 
-    print('Pending users API response status: ${response.statusCode}');
-    print('Pending users API response body: ${response.body}');
+    print('=== PENDING-USERS RESPONSE ===');
+    print('Status: ${response.statusCode}');
+    print('Headers: ${response.headers}');
+    print('Body: ${response.body}');
 
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
@@ -36,7 +45,11 @@ class AdminService {
   }
 
   // Approve user (admin only)
-  Future<Map<String, dynamic>> approveUser(int userId, String password) async {
+  Future<Map<String, dynamic>> approveUser(
+    int userId,
+    String password,
+    String adminEmail,
+  ) async {
     print(
       'AdminService.approveUser called with userId: $userId, password length: ${password.length}',
     );
@@ -46,7 +59,7 @@ class AdminService {
       'Content-Type': 'application/json',
       'X-Admin-Password': password,
     };
-    final body = jsonEncode({'password': password});
+    final body = jsonEncode({'password': password, 'email': adminEmail});
 
     print('Making approve user API call to: $url');
     print('With headers: $headers');

@@ -89,12 +89,24 @@ class _SignupScreenState extends State<SignupScreen> {
     required String fullname,
     required String role,
   }) async {
-    // Simple mock registration for now
-    await Future.delayed(const Duration(seconds: 1));
-    return {
-      'message': 'registered successfully',
-      'user': {'fullname': fullname},
-    };
+    final url = Uri.parse('http://10.0.2.2:8000/api/register/');
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'email': email,
+        'password': password,
+        'password_confirm': passwordConfirm,
+        'fullname': fullname,
+        'role': role,
+      }),
+    );
+
+    if (response.statusCode == 201) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Registration failed: ${response.statusCode}');
+    }
   }
 
   @override

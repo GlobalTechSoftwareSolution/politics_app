@@ -64,6 +64,7 @@ class _PendingUsersScreenState extends State<PendingUsersScreen> {
       final result = await _adminService.approveUser(
         userId,
         PendingUsersScreen._userPassword,
+        PendingUsersScreen._userEmail,
       );
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
