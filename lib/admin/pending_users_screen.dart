@@ -34,14 +34,24 @@ class _PendingUsersScreenState extends State<PendingUsersScreen> {
     });
 
     try {
-      final users = await _adminService.getPendingUsers(
-        PendingUsersScreen._userEmail,
-        PendingUsersScreen._userPassword,
-      );
+      // Use the credentials from the static variables
+      final email = PendingUsersScreen._userEmail;
+      final password = PendingUsersScreen._userPassword;
+
+      print('=== PENDING USERS LOAD ===');
+      print('Email: $email');
+      print('Password length: ${password.length}');
+
+      if (email.isEmpty || password.isEmpty) {
+        throw Exception('User credentials not available. Please log in first.');
+      }
+
+      final users = await _adminService.getPendingUsers(email, password);
       setState(() {
         _pendingUsers = users;
       });
     } catch (e) {
+      print('Error loading pending users: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error loading pending users: ${e.toString()}'),

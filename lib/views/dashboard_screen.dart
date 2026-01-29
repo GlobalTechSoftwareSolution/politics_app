@@ -13,6 +13,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert' as utf8;
 import 'dart:convert' as base64;
 import 'dart:convert';
+import '../services/auth_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   final String? userEmail;
@@ -531,8 +532,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 leading: Icon(Icons.logout, color: Colors.blue[900]),
                 title: const Text('Logout'),
                 trailing: const Icon(Icons.arrow_forward_ios),
-                onTap: () {
-                  // Handle logout
+                onTap: () async {
+                  // Clear saved credentials
+                  await authService.clearCredentials();
+
+                  // Navigate to login screen
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(

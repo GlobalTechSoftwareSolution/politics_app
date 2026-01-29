@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'signup_screen.dart';
 import 'dashboard_screen.dart';
 import '../admin/pending_users_screen.dart';
+import '../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -35,6 +36,12 @@ class _LoginScreenState extends State<LoginScreen> {
         );
 
         if (response['message']?.contains('Login successful') == true) {
+          // Save credentials to persistent storage
+          await authService.saveCredentials(
+            _emailController.text,
+            _passwordController.text,
+          );
+
           // Show welcome message with full name
           final fullName = response['user']['fullname'] ?? 'User';
           ScaffoldMessenger.of(context).showSnackBar(
