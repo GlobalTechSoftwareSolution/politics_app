@@ -4,8 +4,6 @@ import 'dart:convert';
 import 'signup_screen.dart';
 import 'dashboard_screen.dart';
 import '../admin/pending_users_screen.dart';
-import '../admin/admin_dashboard.dart';
-import '../user/user_dashboard.dart';
 import '../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -53,12 +51,6 @@ class _LoginScreenState extends State<LoginScreen> {
               content: Text('Welcome back, $fullName!'),
               backgroundColor: Colors.green,
             ),
-          );
-
-          // Store user credentials for admin operations
-          PendingUsersScreen.setUserCredentials(
-            _emailController.text,
-            _passwordController.text,
           );
 
           // Navigate to main dashboard

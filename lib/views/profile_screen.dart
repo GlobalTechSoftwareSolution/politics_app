@@ -98,12 +98,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),
-        backgroundColor: Colors.blue[900],
-        foregroundColor: Colors.white,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -253,35 +250,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         title: const Text('Logout'),
                         trailing: const Icon(Icons.arrow_forward_ios),
                         onTap: _logout,
-                      ),
-                    ),
-
-                    // Raw JSON display
-                    const SizedBox(height: 30),
-                    const Text(
-                      'Raw Profile Data',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Text(
-                          _profileData != null
-                              ? const JsonEncoder.withIndent(
-                                  '  ',
-                                ).convert(_profileData)
-                              : 'No profile data available',
-                          style: const TextStyle(
-                            fontFamily: 'monospace',
-                            fontSize: 12,
-                            color: Colors.black87,
-                          ),
-                        ),
                       ),
                     ),
                   ],

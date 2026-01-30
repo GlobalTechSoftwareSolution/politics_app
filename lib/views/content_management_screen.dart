@@ -31,6 +31,11 @@ class _ContentManagementScreenState extends State<ContentManagementScreen> {
           _adminEmail = credentials['email'] ?? '';
           _adminPassword = credentials['password'] ?? '';
         });
+        print('=== LOADED CREDENTIALS FROM AUTH SERVICE ===');
+        print('Email: $_adminEmail');
+        print('Password length: ${_adminPassword.length}');
+      } else {
+        print('=== NO CREDENTIALS FOUND IN AUTH SERVICE ===');
       }
     } catch (e) {
       print('Error loading credentials: $e');

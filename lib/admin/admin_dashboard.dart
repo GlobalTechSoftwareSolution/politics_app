@@ -3,7 +3,14 @@ import 'pending_users_screen.dart';
 import 'admin_service.dart';
 
 class AdminDashboard extends StatefulWidget {
-  const AdminDashboard({super.key});
+  final String userEmail;
+  final String userPassword;
+
+  const AdminDashboard({
+    super.key,
+    required this.userEmail,
+    required this.userPassword,
+  });
 
   @override
   State<AdminDashboard> createState() => _AdminDashboardState();
@@ -93,7 +100,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const PendingUsersScreen(),
+                        builder: (context) => PendingUsersScreen(
+                          userEmail: widget.userEmail,
+                          userPassword: widget.userPassword,
+                        ),
                       ),
                     );
                   },

@@ -419,9 +419,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         // For admin users, index 2 is Pending Users
         if (_isAdmin) {
           print('Building Pending Users Screen');
-          // Set credentials for pending users screen
-          PendingUsersScreen.setUserCredentials(_userEmail, _userPassword);
-          return PendingUsersScreen();
+          return PendingUsersScreen(
+            userEmail: _userEmail,
+            userPassword: _userPassword,
+          );
         } else {
           // For non-admin users, index 2 doesn't exist, fallback to home
           print('Building Default Home Content (invalid index for non-admin)');
@@ -603,6 +604,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'Failed to load user profile: ${response.statusCode} - ${response.reasonPhrase}',
       );
     }
+  }
+
+  // New helper method to validate credentials
+  bool _areCredentialsValid() {
+    return _userEmail.isNotEmpty && _userPassword.isNotEmpty;
   }
 
   Widget _buildActiveInfoSection() {
@@ -1132,6 +1138,7 @@ class ActiveInfoDetailScreen extends StatelessWidget {
 }
 
 // Account Settings Screen
+// This screen handles user account settings and profile information
 class AccountSettingsScreen extends StatefulWidget {
   final String? userEmail;
   final String? userPassword;
@@ -1623,10 +1630,15 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                             size: 16,
                           ),
                           onTap: () {
+                            // Store credentials in local variables to avoid scope issues
+
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => PendingUsersScreen(),
+                                builder: (context) => PendingUsersScreen(
+                                  userEmail: email,
+                                  userPassword: widget.userPassword ?? '',
+                                ),
                               ),
                             );
                           },

@@ -2,19 +2,17 @@ import 'package:flutter/material.dart';
 import 'admin_service.dart';
 
 class PendingUsersScreen extends StatefulWidget {
-  const PendingUsersScreen({super.key});
+  final String userEmail;
+  final String userPassword;
+
+  const PendingUsersScreen({
+    super.key,
+    required this.userEmail,
+    required this.userPassword,
+  });
 
   @override
   State<PendingUsersScreen> createState() => _PendingUsersScreenState();
-
-  // Static method to set user credentials from login
-  static void setUserCredentials(String email, String password) {
-    _userEmail = email;
-    _userPassword = password;
-  }
-
-  static String _userEmail = '';
-  static String _userPassword = '';
 }
 
 class _PendingUsersScreenState extends State<PendingUsersScreen> {
@@ -41,9 +39,9 @@ class _PendingUsersScreenState extends State<PendingUsersScreen> {
     });
 
     try {
-      // Use the credentials from the static variables
-      final email = PendingUsersScreen._userEmail;
-      final password = PendingUsersScreen._userPassword;
+      // Use the credentials from widget properties
+      final email = widget.userEmail;
+      final password = widget.userPassword;
 
       print('=== PENDING USERS LOAD ===');
       print('Email: $email');
@@ -80,8 +78,8 @@ class _PendingUsersScreenState extends State<PendingUsersScreen> {
     try {
       final result = await _adminService.approveUser(
         userId,
-        PendingUsersScreen._userPassword,
-        PendingUsersScreen._userEmail,
+        widget.userPassword,
+        widget.userEmail,
       );
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
