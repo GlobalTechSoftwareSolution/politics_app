@@ -43,7 +43,7 @@ class NewsDetailScreen extends StatelessWidget {
               background: news.imageUrl.isNotEmpty
                   ? Image.network(
                       news.imageUrl,
-                      fit: BoxFit.cover,
+                      fit: BoxFit.contain,
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
                           color: Colors.blue[100],

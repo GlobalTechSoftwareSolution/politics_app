@@ -10,6 +10,10 @@ import 'login_screen.dart';
 import '../admin/admin_service.dart';
 import 'content_management_screen.dart';
 import 'add_content_screen.dart';
+import 'splash2_screen.dart';
+import 'krishna_profile_screen.dart';
+import 'profile_screen.dart';
+import 'user_profile_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert' as utf8;
 import 'dart:convert' as base64;
@@ -30,9 +34,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 0;
   List<NewsModel> _newsList = [];
   bool _isLoading = true;
+  bool _showSplash = true;
   bool _isAdmin = false; // Check if user is admin
   String _userEmail = '';
   String _userPassword = '';
+  bool _isSearching = false;
+  String _searchQuery = '';
+  List<dynamic> _allData = [];
+  List<dynamic> _filteredData = [];
 
   @override
   void initState() {
@@ -231,13 +240,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_showSplash) {
+      return Splash2Screen(
+        onSplashComplete: () {
+          setState(() {
+            _showSplash = false;
+          });
+        },
+      );
+    }
+
     // Cache the bottom navigation bar to prevent unnecessary rebuilds
     final bottomNavBar = BottomNavigationBar(
       currentIndex: _currentIndex,
       onTap: (index) {
+        print('=== BOTTOM NAVIGATION TAPPED ===');
+        print('Previous Index: $_currentIndex');
+        print('New Index: $index');
         setState(() {
           _currentIndex = index;
         });
+        print('State Updated, Current Index: $_currentIndex');
       },
       selectedItemColor: Colors.blue[900],
       unselectedItemColor: Colors.grey,
@@ -269,18 +292,91 @@ class _DashboardScreenState extends State<DashboardScreen> {
           IconButton(
             icon: const Icon(Icons.search),
             onPressed: () {
-              // Handle search
+              setState(() {
+                _isSearching = !_isSearching;
+                if (!_isSearching) {
+                  _searchQuery = '';
+                }
+              });
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.notifications),
-            onPressed: () {
-              // Handle notifications
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const KrishnaProfileScreen(),
+                ),
+              );
             },
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                image: const DecorationImage(
+                  image: AssetImage(
+                    'assets/images/krishna-byre-gowda-1528518631.jpg',
+                  ),
+                  fit: BoxFit.cover,
+                ),
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+            ),
           ),
         ],
       ),
-      body: _buildBody(),
+      body: Column(
+        children: [
+          if (_isSearching)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              color: Colors.blue[900],
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      autofocus: true,
+                      decoration: const InputDecoration(
+                        hintText: 'Search...',
+                        hintStyle: TextStyle(color: Colors.white70),
+                        border: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.white),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.white),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.white, width: 2),
+                        ),
+                      ),
+                      style: const TextStyle(color: Colors.white),
+                      onChanged: (value) {
+                        setState(() {
+                          _searchQuery = value.toLowerCase();
+                        });
+                        // Trigger rebuild of active info section
+                        setState(() {});
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () {
+                      setState(() {
+                        _isSearching = false;
+                        _searchQuery = '';
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+          Expanded(child: _buildBody()),
+        ],
+      ),
       bottomNavigationBar: bottomNavBar,
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -290,43 +386,86 @@ class _DashboardScreenState extends State<DashboardScreen> {
           );
         },
         backgroundColor: Colors.blue[900],
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
   Widget _buildBody() {
+    print('=== BUILD BODY CALLED ===');
+    print('Current Index: $_currentIndex');
+    print('Is Admin: $_isAdmin');
+    print('User Email: $_userEmail');
+
     switch (_currentIndex) {
       case 0:
+        print('Building Home Content');
         return _buildHomeContent();
       case 1:
-        // Only show content management if user is admin
+        // For non-admin users, index 1 is Profile
+        // For admin users, index 1 is Content Management
         if (_isAdmin) {
+          print('Building Content Management Screen');
           return const ContentManagementScreen();
         } else {
-          return _buildHomeContent(); // Redirect to home if not admin
+          print('Building User Profile Screen');
+          return UserProfileScreen(
+            userEmail: _userEmail,
+            userPassword: _userPassword,
+          );
         }
       case 2:
-        // Only show pending users if user is admin
+        // For admin users, index 2 is Pending Users
         if (_isAdmin) {
+          print('Building Pending Users Screen');
           // Set credentials for pending users screen
           PendingUsersScreen.setUserCredentials(_userEmail, _userPassword);
           return PendingUsersScreen();
         } else {
-          return _buildHomeContent(); // Redirect to home if not admin
+          // For non-admin users, index 2 doesn't exist, fallback to home
+          print('Building Default Home Content (invalid index for non-admin)');
+          return _buildHomeContent();
         }
       case 3:
-        return _buildProfileContent();
+        // For admin users, index 3 is Profile
+        if (_isAdmin) {
+          print('Building Admin Profile Screen');
+          return ProfileScreen(
+            userEmail: _userEmail,
+            userPassword: _userPassword,
+          );
+        } else {
+          // For non-admin users, index 3 doesn't exist, fallback to home
+          print('Building Default Home Content (invalid index for non-admin)');
+          return _buildHomeContent();
+        }
       default:
+        print('Building Default Home Content');
         return _buildHomeContent();
     }
   }
 
   Widget _buildHomeContent() {
+    if (_showSplash) {
+      return Splash2Screen(
+        onSplashComplete: () {
+          setState(() {
+            _showSplash = false;
+          });
+        },
+      );
+    }
+
     return RefreshIndicator(
       onRefresh: () async {
-        _fetchActiveInfo();
+        setState(() {
+          _showSplash = true;
+        });
+        await Future.delayed(const Duration(milliseconds: 100));
+        if (mounted) {
+          _fetchActiveInfo();
+        }
       },
       child: SingleChildScrollView(
         child: Padding(
@@ -432,119 +571,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
     String password,
   ) async {
     final url = Uri.parse('http://10.0.2.2:8000/api/profile/');
-    final authString = '$email:$password';
-    final authBase64 = base64.base64Encode(utf8.utf8.encode(authString));
 
+    // Use custom headers as expected by the backend
     final headers = {
       'Content-Type': 'application/json',
-      'Authorization': 'Basic $authBase64',
+      'X-User-Email': email,
+      'X-User-Password': password,
     };
 
     print('=== PROFILE API CALL ===');
     print('URL: $url');
     print('Email: $email');
     print('Password length: ${password.length}');
-    print('Auth base64: $authBase64');
+    print('Password: ${password.isNotEmpty ? '***' : 'EMPTY'}');
 
     final response = await http.get(url, headers: headers);
 
     print('=== PROFILE RESPONSE ===');
     print('Status: ${response.statusCode}');
+    print('Headers: ${response.headers}');
     print('Body: ${response.body}');
 
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
+    } else if (response.statusCode == 400) {
+      final errorData = jsonDecode(response.body);
+      print('Profile error: ${errorData['error']}');
+      throw Exception('Profile API error: ${errorData['error']}');
     } else {
-      throw Exception('Failed to load user profile: ${response.statusCode}');
+      throw Exception(
+        'Failed to load user profile: ${response.statusCode} - ${response.reasonPhrase}',
+      );
     }
-  }
-
-  Widget _buildProfileContent() {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Profile header
-            Center(
-              child: Column(
-                children: [
-                  CircleAvatar(
-                    radius: 50,
-                    backgroundColor: Colors.blue[100],
-                    child: Icon(
-                      Icons.person,
-                      size: 50,
-                      color: Colors.blue[900],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    _userEmail.isNotEmpty ? _userEmail : 'User',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _isAdmin ? 'Superuser' : 'User',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: _isAdmin ? Colors.green : Colors.blue[900],
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 30),
-
-            // Profile options
-            Card(
-              child: ListTile(
-                leading: Icon(Icons.settings, color: Colors.blue[900]),
-                title: const Text('Account Settings'),
-                trailing: const Icon(Icons.arrow_forward_ios),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => AccountSettingsScreen(
-                        userEmail: _userEmail,
-                        userPassword: _userPassword,
-                        isAdmin: _isAdmin,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 10),
-            Card(
-              child: ListTile(
-                leading: Icon(Icons.logout, color: Colors.blue[900]),
-                title: const Text('Logout'),
-                trailing: const Icon(Icons.arrow_forward_ios),
-                onTap: () async {
-                  // Clear saved credentials
-                  await authService.clearCredentials();
-
-                  // Navigate to login screen
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const LoginScreen(),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   Widget _buildActiveInfoSection() {
@@ -588,9 +646,43 @@ class _DashboardScreenState extends State<DashboardScreen> {
             print('Data Type: ${data.runtimeType}');
             print('Data Length: ${data is List ? data.length : 'Not a list'}');
 
-            // Check if data is a list or single object
+            // Store original data and filter if needed
             if (data is List) {
-              return _buildActiveInfoListDisplay(data);
+              // Store all data
+              _allData = data;
+              // Apply search filter if there's a query
+              List<dynamic> displayData = data;
+              if (_searchQuery.isNotEmpty) {
+                displayData = data.where((item) {
+                  final heading = (item['heading'] ?? '')
+                      .toString()
+                      .toLowerCase();
+                  final description = (item['description'] ?? '')
+                      .toString()
+                      .toLowerCase();
+                  final submittedBy = (item['submitted_by']['fullname'] ?? '')
+                      .toString()
+                      .toLowerCase();
+
+                  return heading.contains(_searchQuery) ||
+                      description.contains(_searchQuery) ||
+                      submittedBy.contains(_searchQuery);
+                }).toList();
+              }
+
+              if (displayData.isEmpty && _searchQuery.isNotEmpty) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(50.0),
+                    child: Text(
+                      'Found nothing',
+                      style: TextStyle(fontSize: 18, color: Colors.grey),
+                    ),
+                  ),
+                );
+              }
+
+              return _buildActiveInfoListDisplay(displayData);
             } else {
               return _buildActiveInfoDisplay(data);
             }
@@ -682,7 +774,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 child: Image.network(
                   'http://10.0.2.2:8000$imageUrl',
-                  height: 100,
+                  height: 200,
                   width: double.infinity,
                   fit: BoxFit.contain,
                   loadingBuilder: (context, child, loadingProgress) {
@@ -698,7 +790,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   },
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
-                      height: 100,
+                      height: 200,
                       color: Colors.grey[200],
                       child: const Center(
                         child: Icon(
@@ -712,15 +804,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
               )
             else
               Container(
-                height: 100,
+                height: 200,
                 decoration: BoxDecoration(
-                  color: Colors.blue[100],
+                  color: Colors.grey[300],
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(12),
                   ),
                 ),
                 child: const Center(
-                  child: Icon(Icons.info_outline, size: 40, color: Colors.blue),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.image_not_supported,
+                        size: 40,
+                        color: Colors.grey,
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'No Image',
+                        style: TextStyle(color: Colors.grey, fontSize: 14),
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
@@ -865,7 +971,7 @@ class ActiveInfoDetailScreen extends StatelessWidget {
                     'http://10.0.2.2:8000$imageUrl',
                     width: double.infinity,
                     height: 250,
-                    fit: BoxFit.cover,
+                    fit: BoxFit.contain,
                     loadingBuilder: (context, child, loadingProgress) {
                       if (loadingProgress == null) return child;
                       return Center(
@@ -971,7 +1077,7 @@ class ActiveInfoDetailScreen extends StatelessWidget {
                         Navigator.pop(context);
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue[900],
+                        backgroundColor: Colors.green[600],
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
                       child: const Text(
@@ -1063,7 +1169,19 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
   }
 
   Future<void> _loadUserProfile() async {
-    if (widget.userEmail == null || widget.userPassword == null) {
+    print('=== LOADING USER PROFILE IN SETTINGS ===');
+    print('Email from widget: ${widget.userEmail}');
+    print(
+      'Password from widget: ${widget.userPassword != null ? '***' : 'NULL'}',
+    );
+    print('Email length: ${widget.userEmail?.length ?? 0}');
+    print('Password length: ${widget.userPassword?.length ?? 0}');
+
+    if (widget.userEmail == null ||
+        widget.userPassword == null ||
+        widget.userEmail!.isEmpty ||
+        widget.userPassword!.isEmpty) {
+      print('=== CREDENTIALS MISSING IN SETTINGS ===');
       setState(() {
         _isLoading = false;
       });
@@ -1071,15 +1189,21 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     }
 
     try {
+      print('=== CALLING PROFILE API FROM SETTINGS ===');
       final profile = await _getUserProfile(
         widget.userEmail!,
         widget.userPassword!,
       );
+      print('=== PROFILE API SUCCESS IN SETTINGS ===');
+      print('Profile data: $profile');
       setState(() {
         _userProfile = profile;
         _isLoading = false;
       });
     } catch (e) {
+      print('=== PROFILE API ERROR IN SETTINGS ===');
+      print('Error: $e');
+      print('Error type: ${e.runtimeType}');
       setState(() {
         _isLoading = false;
       });
@@ -1097,20 +1221,25 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     String password,
   ) async {
     final url = Uri.parse('http://10.0.2.2:8000/api/profile/');
-    final authString = '$email:$password';
-    final authBase64 = base64.base64Encode(utf8.utf8.encode(authString));
 
+    // Use custom headers as expected by the backend
     final headers = {
       'Content-Type': 'application/json',
-      'Authorization': 'Basic $authBase64',
+      'X-User-Email': email,
+      'X-User-Password': password,
     };
 
     final response = await http.get(url, headers: headers);
 
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
+    } else if (response.statusCode == 400) {
+      final errorData = jsonDecode(response.body);
+      throw Exception('Profile API error: ${errorData['error']}');
     } else {
-      throw Exception('Failed to load user profile: ${response.statusCode}');
+      throw Exception(
+        'Failed to load user profile: ${response.statusCode} - ${response.reasonPhrase}',
+      );
     }
   }
 
@@ -1337,6 +1466,55 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
             color: isSuperuser ? Colors.red : Colors.blue,
           ),
 
+          const SizedBox(height: 24),
+
+          // Raw JSON Data
+          const Text(
+            'Raw Account Data',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.blue,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            elevation: 2,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'JSON Response:',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12.0),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: SelectableText(
+                      JsonEncoder.withIndent('  ').convert(_userProfile),
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 12,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
           const SizedBox(height: 24),
 
           // Actions

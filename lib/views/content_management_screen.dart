@@ -260,6 +260,12 @@ class _ContentManagementScreenState extends State<ContentManagementScreen> {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadPendingContent,
+          ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -292,7 +298,7 @@ class _ContentManagementScreenState extends State<ContentManagementScreen> {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  content['name'] ?? 'Unknown',
+                                  content['heading'] ?? 'No Heading',
                                   style: const TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
@@ -303,7 +309,8 @@ class _ContentManagementScreenState extends State<ContentManagementScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            content['description'] ?? 'No description',
+                            content['description'] ??
+                                'No description available',
                             style: const TextStyle(color: Colors.grey),
                           ),
                           const SizedBox(height: 16),
@@ -363,8 +370,9 @@ class _ContentManagementScreenState extends State<ContentManagementScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Name: ${content['name'] ?? 'Unknown'}'),
+            Text('Heading: ${content['heading'] ?? 'No Heading'}'),
             Text('Description: ${content['description'] ?? 'No description'}'),
+            Text('Status: ${content['status'] ?? 'Unknown'}'),
             Text('Content ID: ${content['id'] ?? 'Unknown'}'),
           ],
         ),
