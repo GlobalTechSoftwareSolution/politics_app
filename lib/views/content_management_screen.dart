@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../../constants.dart';
 import 'dart:convert';
 import '../services/auth_service.dart';
 
@@ -51,7 +52,7 @@ class _ContentManagementScreenState extends State<ContentManagementScreen> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:8000/api/pending-info/'),
+        Uri.parse(Constants.pendingInfoEndpoint),
         headers: {
           'Content-Type': 'application/json',
           'X-Admin-Email': _adminEmail,
@@ -101,7 +102,7 @@ class _ContentManagementScreenState extends State<ContentManagementScreen> {
 
     try {
       print('=== APPROVE CONTENT API CALL ===');
-      print('URL: http://127.0.0.1:8000/api/approve-info/$contentId/');
+      print('URL: ${Constants.approveInfoEndpoint + '$contentId/'}');
       print('Method: POST');
       print(
         'Headers: {Content-Type: application/json, X-Admin-Email: $_adminEmail, X-Admin-Password: ${_adminPassword.isNotEmpty ? '***' : 'EMPTY'}}',
@@ -109,7 +110,7 @@ class _ContentManagementScreenState extends State<ContentManagementScreen> {
       print('Body: {"email":"$_adminEmail","password":"$_adminPassword"}');
 
       final response = await http.post(
-        Uri.parse('http://10.0.2.2:8000/api/approve-info/$contentId/'),
+        Uri.parse(Constants.approveInfoEndpoint + '$contentId/'),
         headers: {
           'Content-Type': 'application/json',
           'X-Admin-Email': _adminEmail,
@@ -180,7 +181,7 @@ class _ContentManagementScreenState extends State<ContentManagementScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://10.0.2.2:8000/api/submit-info/'),
+        Uri.parse(Constants.submitInfoEndpoint),
         headers: {
           'Content-Type': 'application/json',
           'X-Admin-Email': _adminEmail,

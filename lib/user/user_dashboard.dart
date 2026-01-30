@@ -8,6 +8,7 @@ import '../admin/pending_users_screen.dart';
 import '../views/login_screen.dart';
 import '../views/user_add_content_screen.dart';
 import 'package:http/http.dart' as http;
+import '../constants.dart';
 import 'dart:convert' as utf8;
 import 'dart:convert' as base64;
 import 'dart:convert';
@@ -87,14 +88,14 @@ class _UserDashboardState extends State<UserDashboard> {
 
       // Log the exact API call being made
       print('=== ACTIVE-INFO API CALL ===');
-      print('URL: http://10.0.2.2:8000/api/active-info/');
+      print('URL: ${Constants.activeInfoEndpoint}');
       print('Email: $_userEmail');
       print('Password length: ${_userPassword.length}');
       print('Password: ${_userPassword.isNotEmpty ? '***' : 'EMPTY'}');
 
       // Use custom headers as expected by the backend
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:8000/api/active-info/'),
+        Uri.parse(Constants.activeInfoEndpoint),
         headers: {
           'Content-Type': 'application/json',
           'X-User-Email': _userEmail,
@@ -426,7 +427,7 @@ class _UserDashboardState extends State<UserDashboard> {
     // Fetch active info data using custom headers as expected by backend
     return FutureBuilder(
       future: http.get(
-        Uri.parse('http://10.0.2.2:8000/api/active-info/'),
+        Uri.parse(Constants.activeInfoEndpoint),
         headers: {
           'Content-Type': 'application/json',
           'X-User-Email': _userEmail,
@@ -536,14 +537,12 @@ class _UserDashboardState extends State<UserDashboard> {
             // Image section
             if (imageUrl != null && imageUrl.isNotEmpty)
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(12),
-                ),
+                borderRadius: BorderRadius.circular(12),
                 child: Image.network(
-                  'http://10.0.2.2:8000$imageUrl',
-                  height: 100,
+                  '${Constants.imageBaseUrl}$imageUrl',
                   width: double.infinity,
-                  fit: BoxFit.contain,
+                  height: 250,
+                  fit: BoxFit.cover,
                   loadingBuilder: (context, child, loadingProgress) {
                     if (loadingProgress == null) return child;
                     return Center(
@@ -557,11 +556,12 @@ class _UserDashboardState extends State<UserDashboard> {
                   },
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
-                      height: 100,
+                      height: 250,
                       color: Colors.grey[200],
                       child: const Center(
                         child: Icon(
                           Icons.image_not_supported,
+                          size: 60,
                           color: Colors.grey,
                         ),
                       ),
@@ -571,15 +571,13 @@ class _UserDashboardState extends State<UserDashboard> {
               )
             else
               Container(
-                height: 100,
+                height: 250,
                 decoration: BoxDecoration(
                   color: Colors.blue[100],
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(12),
-                  ),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Center(
-                  child: Icon(Icons.info_outline, size: 40, color: Colors.blue),
+                  child: Icon(Icons.info_outline, size: 80, color: Colors.blue),
                 ),
               ),
 
@@ -721,7 +719,7 @@ class ActiveInfoDetailScreen extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: Image.network(
-                    'http://10.0.2.2:8000$imageUrl',
+                    '${Constants.imageBaseUrl}$imageUrl',
                     width: double.infinity,
                     height: 250,
                     fit: BoxFit.cover,
@@ -954,7 +952,7 @@ class _UserAccountSettingsScreenState extends State<UserAccountSettingsScreen> {
     String email,
     String password,
   ) async {
-    final url = Uri.parse('http://10.0.2.2:8000/api/profile/');
+    final url = Uri.parse(Constants.profileEndpoint);
     final authString = '$email:$password';
     final authBase64 = base64.base64Encode(utf8.utf8.encode(authString));
 

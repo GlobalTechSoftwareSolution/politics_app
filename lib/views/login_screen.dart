@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../../constants.dart';
 import 'dart:convert';
 import 'signup_screen.dart';
 import 'dashboard_screen.dart';
@@ -93,7 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }) async {
     // Make actual API call to login
     final response = await http.post(
-      Uri.parse('http://10.0.2.2:8000/api/login/'),
+      Uri.parse(Constants.loginEndpoint),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'email': email, 'password': password}),
     );

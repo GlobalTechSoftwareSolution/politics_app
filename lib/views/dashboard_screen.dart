@@ -15,6 +15,7 @@ import 'krishna_profile_screen.dart';
 import 'profile_screen.dart';
 import 'user_profile_screen.dart';
 import 'package:http/http.dart' as http;
+import '../../constants.dart';
 import 'dart:convert' as utf8;
 import 'dart:convert' as base64;
 import 'dart:convert';
@@ -103,14 +104,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       // Log the exact API call being made
       print('=== ACTIVE-INFO API CALL ===');
-      print('URL: http://10.0.2.2:8000/api/active-info/');
+      print('URL: ${Constants.activeInfoEndpoint}');
       print('Email: $_userEmail');
       print('Password length: ${_userPassword.length}');
       print('Password: ${_userPassword.isNotEmpty ? '***' : 'EMPTY'}');
 
       // Use custom headers as expected by the backend
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:8000/api/active-info/'),
+        Uri.parse(Constants.activeInfoEndpoint),
         headers: {
           'Content-Type': 'application/json',
           'X-User-Email': _userEmail,
@@ -571,7 +572,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     String email,
     String password,
   ) async {
-    final url = Uri.parse('http://10.0.2.2:8000/api/profile/');
+    final url = Uri.parse(Constants.profileEndpoint);
 
     // Use custom headers as expected by the backend
     final headers = {
@@ -615,7 +616,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Fetch active info data using custom headers as expected by backend
     return FutureBuilder(
       future: http.get(
-        Uri.parse('http://10.0.2.2:8000/api/active-info/'),
+        Uri.parse(Constants.activeInfoEndpoint),
         headers: {
           'Content-Type': 'application/json',
           'X-User-Email': _userEmail,
@@ -779,7 +780,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   top: Radius.circular(12),
                 ),
                 child: Image.network(
-                  'http://10.0.2.2:8000$imageUrl',
+                  '${Constants.imageBaseUrl}\$imageUrl',
                   height: 200,
                   width: double.infinity,
                   fit: BoxFit.contain,
@@ -974,7 +975,7 @@ class ActiveInfoDetailScreen extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: Image.network(
-                    'http://10.0.2.2:8000$imageUrl',
+                    '${Constants.imageBaseUrl}\$imageUrl',
                     width: double.infinity,
                     height: 250,
                     fit: BoxFit.contain,
@@ -1227,7 +1228,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     String email,
     String password,
   ) async {
-    final url = Uri.parse('http://10.0.2.2:8000/api/profile/');
+    final url = Uri.parse(Constants.profileEndpoint);
 
     // Use custom headers as expected by the backend
     final headers = {

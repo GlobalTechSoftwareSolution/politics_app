@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../../constants.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
@@ -76,7 +77,7 @@ class _UserAddContentScreenState extends State<UserAddContentScreen> {
       }
 
       final response = await http.post(
-        Uri.parse('http://10.0.2.2:8000/api/submit-info/'),
+        Uri.parse(Constants.submitInfoEndpoint),
         headers: {
           'X-Admin-Email': _userEmail,
           'X-Admin-Password': _userPassword,
@@ -93,7 +94,7 @@ class _UserAddContentScreenState extends State<UserAddContentScreen> {
       // Log the API call details exactly as requested
       print('Environment');
       print('POST');
-      print('http://127.0.0.1:8000/api/submit-info/');
+      print('${Constants.submitInfoEndpoint}');
       print(
         jsonEncode({
           'email': _userEmail,

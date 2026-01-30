@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../../constants.dart';
 import 'dart:convert';
 import 'login_screen.dart';
 import 'dashboard_screen.dart';
@@ -90,7 +91,7 @@ class _SignupScreenState extends State<SignupScreen> {
     required String fullname,
     required String role,
   }) async {
-    final url = Uri.parse('http://10.0.2.2:8000/api/register/');
+    final url = Uri.parse(Constants.registerEndpoint);
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},

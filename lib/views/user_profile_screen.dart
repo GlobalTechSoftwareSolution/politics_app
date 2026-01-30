@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../../constants.dart';
 import 'dart:convert';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
@@ -31,7 +32,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   Future<void> _loadUserProfile() async {
     try {
-      final url = Uri.parse('http://10.0.2.2:8000/api/profile/');
+      final url = Uri.parse(Constants.profileEndpoint);
       final headers = {
         'Content-Type': 'application/json',
         'X-User-Email': widget.userEmail,

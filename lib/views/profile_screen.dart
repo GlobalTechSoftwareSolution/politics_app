@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../../constants.dart';
 import 'dart:convert';
 import 'login_screen.dart';
 import '../services/auth_service.dart';
-import 'dashboard_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String userEmail;
@@ -33,7 +33,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _checkUserRole() async {
     try {
-      final url = Uri.parse('http://10.0.2.2:8000/api/profile/');
+      final url = Uri.parse(Constants.profileEndpoint);
       final headers = {
         'Content-Type': 'application/json',
         'X-User-Email': widget.userEmail,
@@ -59,7 +59,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadProfileData() async {
     try {
-      final url = Uri.parse('http://10.0.2.2:8000/api/profile/');
+      final url = Uri.parse(Constants.profileEndpoint);
       final headers = {
         'Content-Type': 'application/json',
         'X-User-Email': widget.userEmail,
@@ -224,26 +224,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Card(
-                      child: ListTile(
-                        leading: Icon(Icons.settings, color: Colors.blue[900]),
-                        title: const Text('Account Settings'),
-                        trailing: const Icon(Icons.arrow_forward_ios),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => AccountSettingsScreen(
-                                userEmail: widget.userEmail,
-                                userPassword: widget.userPassword,
-                                isAdmin: _isAdmin,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 10),
+
                     Card(
                       child: ListTile(
                         leading: Icon(Icons.logout, color: Colors.red[700]),

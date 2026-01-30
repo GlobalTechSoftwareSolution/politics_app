@@ -2,9 +2,10 @@ import 'dart:convert';
 import 'dart:convert' as utf8;
 import 'dart:convert' as base64;
 import 'package:http/http.dart' as http;
+import '../constants.dart';
 
 class AdminService {
-  final String baseUrl = 'http://10.0.2.2:8000';
+  final String baseUrl = Constants.apiUrl;
 
   // Get pending users (admin only)
   Future<List<dynamic>> getPendingUsers(String email, String password) async {
@@ -12,7 +13,7 @@ class AdminService {
       'AdminService.getPendingUsers called with email: $email, password length: ${password.length}',
     );
 
-    final url = Uri.parse('http://10.0.2.2:8000/api/pending-users/');
+    final url = Uri.parse(Constants.pendingUsersEndpoint);
 
     // Use custom headers as expected by the backend
     final headers = {
@@ -54,7 +55,7 @@ class AdminService {
       'AdminService.approveUser called with userId: $userId, password length: ${password.length}',
     );
 
-    final url = Uri.parse('$baseUrl/api/approve-user/$userId/');
+    final url = Uri.parse(Constants.approveUserEndpoint + '$userId/');
     final headers = {
       'Content-Type': 'application/json',
       'X-Admin-Password': password,
@@ -81,7 +82,7 @@ class AdminService {
 
   // Approve information (admin only)
   Future<Map<String, dynamic>> approveInfo(int infoId, String password) async {
-    final url = Uri.parse('$baseUrl/api/approve-info/$infoId/');
+    final url = Uri.parse(Constants.approveInfoEndpoint + '$infoId/');
     final headers = {
       'Content-Type': 'application/json',
       'X-Admin-Password': password,
@@ -99,7 +100,7 @@ class AdminService {
 
   // Get user profile
   Future<Map<String, dynamic>> getUserProfile() async {
-    final url = Uri.parse('$baseUrl/api/profile/');
+    final url = Uri.parse(Constants.profileEndpoint);
 
     final response = await http.get(
       url,
@@ -115,7 +116,7 @@ class AdminService {
 
   // Login user
   Future<Map<String, dynamic>> loginUser(String email, String password) async {
-    final url = Uri.parse('$baseUrl/api/login/');
+    final url = Uri.parse(Constants.loginEndpoint);
 
     final response = await http.post(
       url,

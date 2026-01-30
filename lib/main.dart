@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'views/splash_screen.dart';
 import 'views/login_screen.dart';
 import 'views/dashboard_screen.dart';
@@ -7,6 +8,12 @@ import 'services/auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    print('Failed to load .env file: $e');
+    // Use default values if .env file is not found
+  }
   await SharedPreferences.getInstance();
   runApp(const PoliticsApp());
 }
