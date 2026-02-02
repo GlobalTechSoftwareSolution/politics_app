@@ -142,13 +142,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           if (_profileData != null) ...[
                             const SizedBox(height: 8),
-                            Text(
-                              'Member since: ${_formatDate(_profileData!['created_at'])}',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey,
+                            if (_profileData!['created_at'] != null &&
+                                _profileData!['created_at'].isNotEmpty)
+                              Text(
+                                'Member since: ${_formatDate(_profileData!['created_at'])}',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey,
+                                ),
                               ),
-                            ),
                           ],
                         ],
                       ),

@@ -513,9 +513,13 @@ class _UserDashboardState extends State<UserDashboard> {
   Widget _buildActiveInfoCard(Map<String, dynamic> item, int index) {
     final heading = item['heading'] ?? 'No heading';
     final description = item['description'] ?? 'No description';
-    final submittedBy = item['submitted_by']['fullname'] ?? 'user';
+    final submittedBy =
+        item['submitted_by_name'] ??
+        (item['submitted_by'] as Map<String, dynamic>?)?['fullname'] ??
+        'user';
     final imageUrl = item['image'];
-    final submittedAt = item['submitted_by']['created_at'] ?? '';
+    final submittedAt =
+        (item['submitted_by'] as Map<String, dynamic>?)?['created_at'] ?? '';
 
     return GestureDetector(
       onTap: () {
@@ -539,7 +543,9 @@ class _UserDashboardState extends State<UserDashboard> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: Image.network(
-                  '${Constants.imageBaseUrl}$imageUrl',
+                  imageUrl.startsWith('http')
+                      ? imageUrl
+                      : '${Constants.imageBaseUrl}$imageUrl',
                   width: double.infinity,
                   height: 250,
                   fit: BoxFit.cover,
@@ -557,12 +563,26 @@ class _UserDashboardState extends State<UserDashboard> {
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
                       height: 250,
+                      width: double.infinity,
                       color: Colors.grey[200],
-                      child: const Center(
-                        child: Icon(
-                          Icons.image_not_supported,
-                          size: 60,
-                          color: Colors.grey,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.image_not_supported,
+                              size: 60,
+                              color: Colors.grey,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Image not available',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     );
@@ -696,9 +716,12 @@ class ActiveInfoDetailScreen extends StatelessWidget {
     final heading = item['heading'] ?? 'No heading';
     final description = item['description'] ?? 'No description';
     final imageUrl = item['image'];
-    final submittedBy = item['submitted_by']['fullname'] ?? 'user';
-    final submittedByEmail = item['submitted_by']['email'] ?? '';
-    final submittedAt = item['submitted_by']['created_at'] ?? '';
+    final submittedBy =
+        (item['submitted_by'] as Map<String, dynamic>?)?['fullname'] ?? 'user';
+    final submittedByEmail =
+        (item['submitted_by'] as Map<String, dynamic>?)?['email'] ?? '';
+    final submittedAt =
+        (item['submitted_by'] as Map<String, dynamic>?)?['created_at'] ?? '';
     final approvedAt = item['approved_at'] ?? '';
 
     return Scaffold(
@@ -719,7 +742,9 @@ class ActiveInfoDetailScreen extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: Image.network(
-                    '${Constants.imageBaseUrl}$imageUrl',
+                    imageUrl.startsWith('http')
+                        ? imageUrl
+                        : '${Constants.imageBaseUrl}$imageUrl',
                     width: double.infinity,
                     height: 250,
                     fit: BoxFit.cover,
@@ -1011,8 +1036,8 @@ class _UserAccountSettingsScreenState extends State<UserAccountSettingsScreen> {
     final email = _userProfile!['email'] ?? widget.userEmail ?? 'No email';
     final role = _userProfile!['role'] ?? 'user';
     final isApproved = _userProfile!['is_approved'] ?? false;
-    final createdAt = _userProfile!['created_at'];
-    final approvalDate = _userProfile!['approval_date'];
+    final createdAt = _userProfile!['created_at'] ?? '';
+    final approvalDate = _userProfile!['approval_date'] ?? '';
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),

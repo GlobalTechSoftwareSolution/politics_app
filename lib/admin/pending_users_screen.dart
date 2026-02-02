@@ -185,7 +185,7 @@ class _PendingUsersScreenState extends State<PendingUsersScreen> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                'Registered: ${_formatDate(user['created_at'])}',
+                                'Registered: ${user['created_at'] != null ? _formatDate(user['created_at']) : 'N/A'}',
                               ),
                             ],
                           ),
@@ -259,7 +259,9 @@ class _PendingUsersScreenState extends State<PendingUsersScreen> {
             Text('Email: ${user['email'] ?? 'No email'}'),
             Text('Role: ${user['role'] ?? 'user'}'),
             Text('User ID: ${user['id'] ?? 'Unknown'}'),
-            Text('Registered: ${_formatDate(user['created_at'])}'),
+            Text(
+              'Registered: ${user['created_at'] != null ? _formatDate(user['created_at']) : 'N/A'}',
+            ),
           ],
         ),
         actions: [

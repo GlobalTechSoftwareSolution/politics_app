@@ -667,9 +667,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   final description = (item['description'] ?? '')
                       .toString()
                       .toLowerCase();
-                  final submittedBy = (item['submitted_by']['fullname'] ?? '')
-                      .toString()
-                      .toLowerCase();
+                  final submittedBy =
+                      (item['submitted_by_name'] ??
+                              item['submitted_by']['fullname'] ??
+                              '')
+                          .toString()
+                          .toLowerCase();
 
                   return heading.contains(_searchQuery) ||
                       description.contains(_searchQuery) ||
@@ -752,9 +755,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildActiveInfoCard(Map<String, dynamic> item, int index) {
     final heading = item['heading'] ?? 'No heading';
     final description = item['description'] ?? 'No description';
-    final submittedBy = item['submitted_by']['fullname'] ?? 'user';
+    final submittedBy =
+        item['submitted_by_name'] ??
+        (item['submitted_by'] as Map<String, dynamic>?)?['fullname'] ??
+        'user';
     final imageUrl = item['image'];
-    final submittedAt = item['submitted_by']['created_at'] ?? '';
+    final submittedAt =
+        (item['submitted_by'] as Map<String, dynamic>?)?['created_at'] ?? '';
 
     return GestureDetector(
       onTap: () {
@@ -780,10 +787,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   top: Radius.circular(12),
                 ),
                 child: Image.network(
-                  '${Constants.imageBaseUrl}\$imageUrl',
+                  imageUrl.startsWith('http')
+                      ? imageUrl
+                      : '${Constants.imageBaseUrl}$imageUrl',
                   height: 200,
                   width: double.infinity,
-                  fit: BoxFit.contain,
+                  fit: BoxFit.cover,
                   loadingBuilder: (context, child, loadingProgress) {
                     if (loadingProgress == null) return child;
                     return Center(
@@ -798,11 +807,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
                       height: 200,
+                      width: double.infinity,
                       color: Colors.grey[200],
-                      child: const Center(
-                        child: Icon(
-                          Icons.image_not_supported,
-                          color: Colors.grey,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.image_not_supported,
+                              size: 50,
+                              color: Colors.grey,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Image not available',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     );
@@ -952,9 +976,14 @@ class ActiveInfoDetailScreen extends StatelessWidget {
     final heading = item['heading'] ?? 'No heading';
     final description = item['description'] ?? 'No description';
     final imageUrl = item['image'];
-    final submittedBy = item['submitted_by']['fullname'] ?? 'user';
-    final submittedByEmail = item['submitted_by']['email'] ?? '';
-    final submittedAt = item['submitted_by']['created_at'] ?? '';
+    final submittedBy =
+        (item['submitted_by'] as Map<String, dynamic>?)?['fullname'] ?? 'user';
+    final submittedByEmail =
+        item['submitted_by_email'] ??
+        (item['submitted_by'] as Map<String, dynamic>?)?['email'] ??
+        '';
+    final submittedAt =
+        (item['submitted_by'] as Map<String, dynamic>?)?['created_at'] ?? '';
     final approvedAt = item['approved_at'] ?? '';
 
     return Scaffold(
@@ -975,10 +1004,12 @@ class ActiveInfoDetailScreen extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: Image.network(
-                    '${Constants.imageBaseUrl}\$imageUrl',
+                    imageUrl.startsWith('http')
+                        ? imageUrl
+                        : '${Constants.imageBaseUrl}$imageUrl',
                     width: double.infinity,
                     height: 250,
-                    fit: BoxFit.contain,
+                    fit: BoxFit.cover,
                     loadingBuilder: (context, child, loadingProgress) {
                       if (loadingProgress == null) return child;
                       return Center(
@@ -1294,8 +1325,8 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     final isApproved = _userProfile!['is_approved'] ?? false;
     final isSuperuser = _userProfile!['is_superuser'] ?? false;
     final isStaff = _userProfile!['is_staff'] ?? false;
-    final createdAt = _userProfile!['created_at'];
-    final approvalDate = _userProfile!['approval_date'];
+    final createdAt = _userProfile!['created_at'] ?? '';
+    final approvalDate = _userProfile!['approval_date'] ?? '';
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),

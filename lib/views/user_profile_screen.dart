@@ -192,7 +192,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                     ? 'Regular User'
                                     : 'Admin',
                               ),
-                              if (_userProfile!['created_at'] != null)
+                              if (_userProfile!['created_at'] != null &&
+                                  _userProfile!['created_at'].isNotEmpty)
                                 _buildDetailRow(
                                   'Member Since',
                                   _formatDate(_userProfile!['created_at']),
