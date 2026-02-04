@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "795000728222",
+    "project_id": "politics-app-1234",
+    "storage_bucket": "politics-app-1234.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:795000728222:android:3c7de1e582e165d457a98f",
+        "android_client_info": {
+          "package_name": "com.example.politics_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDThOAs9CdnDg_puLLPX2L1V_QMKzR5_Cg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
